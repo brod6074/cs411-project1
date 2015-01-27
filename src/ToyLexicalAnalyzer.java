@@ -50,7 +50,7 @@ public class ToyLexicalAnalyzer {
 			// determine if token should be id, keyword, or boolean
 			
 			// if id, add to symbol table
-			symTab.insert(s);
+			symTab.insert(s, false);
 		}
 		if (Character.isDigit(currentChar)) {
 			// code to handle integers (decimal or hex)
@@ -96,7 +96,7 @@ public class ToyLexicalAnalyzer {
 			}
 		}
 		
-		void insert(String s) {
+		void insert(String s, boolean isKeyword) {
 			// use first character to determine index in switch array
 			char c = s.charAt(0);
 			int switchIndex = getSwitchIndex(c);
@@ -113,19 +113,32 @@ public class ToyLexicalAnalyzer {
 					if (trieNext[currPos] == EMPTY) {
 						trieNext[currPos] = nextFreeSpot;
 						currPos = nextFreeSpot;
-						trieSymbol[currPos++] = c;
+						
 					} else {
-						//
+						while (trieSymbol[currPos] != ' ' ||
+								trieSymbol[currPos] != c)
+							currPos = trieNext[currPos];
 					}
+					trieSymbol[currPos++] = c;
 				}
 			}
 			
-			// if keyword, trieSymbol[position++] = KEYWORD_TERMINAL;
-			// else , trieSymbol[position++] = ID_TERMINAL;
-			// nextFreeSpot = position;
-			trieSymbol[currPos++] = '@';
-			nextFreeSpot = currPos;
+			// word is smaller than similar, previously inserted words
+			// e.g. inserting abs after absolute/absolutely
+			while (trieSymbol[currPos] != ' ') {
+				if (trieNext[currPos] == EMPTY) 
+					trieNext[currPos] = nextFreeSpot;
+					
+				currPos = trieNext[currPos];
+			}
 			
+			
+			if (isKeyword)
+				trieSymbol[currPos++] = KEYWORD_TERMINAL;
+			else
+				trieSymbol[currPos++] = ID_TERMINAL;
+			
+			nextFreeSpot = currPos;		
 		}
 		
 		boolean isReserved(String s) {
