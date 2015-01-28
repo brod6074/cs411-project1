@@ -1,7 +1,7 @@
-//import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PushbackReader;
-//import java.util.Collection;
+import java.util.List;
+import java.util.LinkedList;
 
 /**
  * 
@@ -9,14 +9,14 @@ import java.io.PushbackReader;
  *
  */
 public class ToyLexicalAnalyzer {
-	//private static final char EOF = (char) -1;
 	
 	private PushbackReader source;
+	private List<ToyToken> tokens;
 	private Trie symTab;
-	//private Collection<ToyToken> tokens;
 	
 	public ToyLexicalAnalyzer(PushbackReader source) {
 		this.source = source;
+		tokens = new LinkedList<ToyToken>();
 		symTab = new Trie();
 	}
 	
@@ -34,7 +34,113 @@ public class ToyLexicalAnalyzer {
 		while (isWhiteSpace(currentChar))
 			currentChar = (char)source.read();
 		
-		// code for handling identifiers/keywords/booleans
+		ToyToken t;
+		// OPERATORS
+		switch (currentChar) {
+		
+			// DVISION/SINGLE COMMENT/OR MULTI COMMENT
+			case '/':
+				// handle possible consecutive comments, e.g. /* ---*/ /* --- */
+				do {
+					peekChar = (char)source.read();
+					if (peekChar == '/') {
+						while ((currentChar = (char)source.read()) != '\r') {}
+					} else if (peekChar == '*') {
+						currentChar = (char)source.read();
+						peekChar = (char)source.read();
+						while (currentChar != '*' && peekChar != '/') {
+							currentChar = peekChar;
+							peekChar = (char)source.read();
+						}
+					} else {
+						source.unread((int) peekChar);
+						tokens.add(ToyToken._division);
+						break;
+					}
+					
+				} while ((currentChar = (char)source.read()) == '/');
+				
+			// HANDLE STRING CONSTANTS
+			case '"':
+				break;
+			
+			// HANDLE SINGLE CHAR SYMBOLS/OPERATORS
+			case '+': tokens.add(ToyToken._plus); break;
+			case '-': tokens.add(ToyToken._minus); break;
+			case '*': tokens.add(ToyToken._multiplication); break;
+			case '%': tokens.add(ToyToken._mod); break;
+			case ';': tokens.add(ToyToken._semicolon); break;
+			case ',': tokens.add(ToyToken._comma); break;
+			case '.': tokens.add(ToyToken._period); break;
+			case '(': tokens.add(ToyToken._leftparen); break;
+			case ')': tokens.add(ToyToken._rightparen); break;
+			case '[': tokens.add(ToyToken._leftbracket); break;
+			case ']': tokens.add(ToyToken._rightbracket); break;
+			case '{': tokens.add(ToyToken._leftbrace); break;
+			case '}': tokens.add(ToyToken._rightbrace); break;
+				
+			// HANDLE POSSIBLE MULTI CHAR OPERATORS
+			case '<':
+				peekChar = (char)source.read();
+				if (peekChar == '=')
+					tokens.add(ToyToken._lessequal);
+				else {
+					source.unread((int) peekChar);
+					tokens.add(ToyToken._less);
+				}
+				break;
+			case '>':
+				peekChar = (char)source.read();
+				if (peekChar == '=')
+					tokens.add(ToyToken._greaterequal);
+				else {
+					source.unread((int) peekChar);
+					tokens.add(ToyToken._greater);
+				}
+				break;
+			case '=':
+				peekChar = (char)source.read();
+				if (peekChar == '=')
+					tokens.add(ToyToken._equal);
+				else {
+					source.unread((int) peekChar);
+					tokens.add(ToyToken._assignop);
+				}
+				break;
+			case '!':
+				peekChar = (char)source.read();
+				if (peekChar == '=')
+					tokens.add(ToyToken._notequal);
+				else {
+					source.unread((int) peekChar);
+					tokens.add(ToyToken._not);
+				}
+				break;		
+			case '&':
+				peekChar = (char)source.read();
+				if (peekChar == '&')
+					tokens.add(ToyToken._and);
+				else {
+					source.unread((int) peekChar);
+					tokens.add(ToyToken._ERROR);
+				}
+				break;		
+			case '|':
+				peekChar = (char)source.read();
+				if (peekChar == '|')
+					tokens.add(ToyToken._or);
+				else {
+					source.unread((int) peekChar);
+					tokens.add(ToyToken._ERROR);
+				}
+				break;
+				
+			
+			default:
+				// OTHER ERROR
+		}
+		
+		// IDENTIFIERS/KEYWORDS/BOOLEAN
 		if (Character.isLetter(currentChar)) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(currentChar);
@@ -43,19 +149,30 @@ public class ToyLexicalAnalyzer {
 			while (Character.isLetterOrDigit(peekChar) || peekChar == '_') {
 				sb.append(peekChar);
 				peekChar = (char)source.read();
-			}
-			
+			}		
 			String s = sb.toString();
 			
 			// determine if token should be id, keyword, or boolean
+			if (s.equals("true") || s.equals("false"))
+					tokens.add(ToyToken._booleanconstant);
 			
 			// if id, add to symbol table
-			symTab.insert(s, false);
+			//symTab.insert(s, false);
+			tokens.add(ToyToken._id);
 		}
+		// DIGITS
 		if (Character.isDigit(currentChar)) {
-			// code to handle integers (decimal or hex)
-			// code to handle floating point
+			peekChar = (char)source.read();
+			
+			// handle hex
+			if (currentChar == 0 && Character.toUpperCase(peekChar) == 'X') {
+				
+			}
+			
+			// code to handle floating point)
 		}
+		
+		
 		
 		return -1;
 	}
@@ -133,10 +250,12 @@ public class ToyLexicalAnalyzer {
 			}
 			
 			
+			
 			if (isKeyword)
 				trieSymbol[currPos++] = KEYWORD_TERMINAL;
 			else
 				trieSymbol[currPos++] = ID_TERMINAL;
+			
 			
 			nextFreeSpot = currPos;		
 		}
@@ -157,7 +276,7 @@ public class ToyLexicalAnalyzer {
 		}
 	}
 	
-	/*private enum ToyToken {
+	private enum ToyToken {
 		_boolean(1, "boolean"),
 		_break(2, "break"),
 		_class(3, "class"),
@@ -205,18 +324,22 @@ public class ToyLexicalAnalyzer {
 		_stringconstant(45, "stringconstant"),
 		_booleanconstant(46, "booleanconstant"),
 		_id(47, "id"),
-		// special tokens for recognizing/ignoring whitespace
-		_space(-1, "space"),
-		_tab(-1, "tab"),
-		_newline(-2, "newline"),
-		_eof(-3, "eof");
+		
+		// SPECIAL TOKENS FOR RECOGNIZING/IGNORING WHITESPACE
+		//_space(-1, "space"),
+		//_tab(-1, "tab"),
+		//_newline(-2, "newline"),
+		_carriageReturn(-1, "carriage"),
+		_eof(-2, "EOF"),
+		_ERROR(-3, "ERROR_TOKEN"),
+		_NO_TOKEN(-4, "NO TOKEN"); // program ends with whitespace
 		
 		private final int tokenNum;
 		private final String tokenString;
 		
-		ToyToken(int num) { 
+		/*ToyToken(int num) { 
 			this(num, null); 
-		}
+		}*/
 		
 		ToyToken(int num, String keyword) { 
 			tokenNum = num; tokenString = keyword;
@@ -224,6 +347,6 @@ public class ToyLexicalAnalyzer {
 		
 		public int getTokenNumber() { return tokenNum; }
 		
-	}*/
+	}
 
 } // end of class ToyLexicalAnalyzer
