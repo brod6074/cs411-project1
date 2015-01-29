@@ -5,16 +5,16 @@ import java.util.LinkedList;
 
 /**
  * 
- * ToyLexicalAnalyzer
+ * ToyLexer
  *
  */
-public class ToyLexicalAnalyzer {
+public class ToyLexer {
 	
 	private PushbackReader source;
 	private List<ToyToken> tokens;
 	private Trie symTab;
 	
-	public ToyLexicalAnalyzer(PushbackReader source) {
+	public ToyLexer(PushbackReader source) {
 		this.source = source;
 		tokens = new LinkedList<ToyToken>();
 		symTab = new Trie();
@@ -26,48 +26,55 @@ public class ToyLexicalAnalyzer {
 	 * 
 	 * @return int representing the token class 
 	 */
-	public int scanNextToken() throws IOException {
-		char currentChar, peekChar;
-		currentChar = (char)source.read();
+	public void scanNextToken() throws IOException {
+		char curr, peek;
+		curr = readChar();
 		
 		// skip whitespace
-		while (isWhiteSpace(currentChar))
-			currentChar = (char)source.read();
+		while (isWhiteSpace(curr))
+			curr = readChar();
 		
-		ToyToken t;
-		// OPERATORS
-		switch (currentChar) {
-		
-			// DVISION/SINGLE COMMENT/OR MULTI COMMENT
-			case '/':
-				// handle possible consecutive comments, e.g. /* ---*/ /* --- */
-				do {
-					peekChar = (char)source.read();
-					if (peekChar == '/') {
-						while ((currentChar = (char)source.read()) != '\r') {}
-					} else if (peekChar == '*') {
-						currentChar = (char)source.read();
-						peekChar = (char)source.read();
-						while (currentChar != '*' && peekChar != '/') {
-							currentChar = peekChar;
-							peekChar = (char)source.read();
-						}
-					} else {
-						source.unread((int) peekChar);
-						tokens.add(ToyToken._division);
-						break;
-					}
-					
-				} while ((currentChar = (char)source.read()) == '/');
-				
-			// HANDLE STRING CONSTANTS
-			case '"':
+		// HANDLE DVISION/SINGLE COMMENT/OR MULTI COMMENT
+		while (curr == '/') {
+			peek = readChar();
+			
+			// SINGLE LINE COMMENT: read chars until carriage return
+			if (peek == '/') {
+				while ((curr = readChar()) != '\r') {}
+				curr = readChar();
+			}
+			// MULTI-LINE COMMENT: read chars until curr == '*' and peek == '/'
+			else if (peek == '*') {
+				curr = readChar();
+				peek = readChar();
+				while (curr != '*' && peek != '/') {
+					curr = peek;
+					peek = readChar();
+				}
+				curr = readChar();
+			} 
+			else {
+				pushback(peek);
 				break;
+			}
+		}
+		
+		// skip more whitespace if comments were read
+		while (isWhiteSpace(curr))
+			curr = readChar();
+		
+		// OPERATORS
+		switch (curr) {
+		
+			// HANDLE STRING CONSTANTS
+			//case '"':
+				//break;
 			
 			// HANDLE SINGLE CHAR SYMBOLS/OPERATORS
 			case '+': tokens.add(ToyToken._plus); break;
 			case '-': tokens.add(ToyToken._minus); break;
 			case '*': tokens.add(ToyToken._multiplication); break;
+			case '/': tokens.add(ToyToken._division); break;
 			case '%': tokens.add(ToyToken._mod); break;
 			case ';': tokens.add(ToyToken._semicolon); break;
 			case ',': tokens.add(ToyToken._comma); break;
@@ -81,56 +88,56 @@ public class ToyLexicalAnalyzer {
 				
 			// HANDLE POSSIBLE MULTI CHAR OPERATORS
 			case '<':
-				peekChar = (char)source.read();
-				if (peekChar == '=')
+				peek = readChar();
+				if (peek == '=')
 					tokens.add(ToyToken._lessequal);
 				else {
-					source.unread((int) peekChar);
+					pushback( peek);
 					tokens.add(ToyToken._less);
 				}
 				break;
 			case '>':
-				peekChar = (char)source.read();
-				if (peekChar == '=')
+				peek = readChar();
+				if (peek == '=')
 					tokens.add(ToyToken._greaterequal);
 				else {
-					source.unread((int) peekChar);
+					pushback( peek);
 					tokens.add(ToyToken._greater);
 				}
 				break;
 			case '=':
-				peekChar = (char)source.read();
-				if (peekChar == '=')
+				peek = readChar();
+				if (peek == '=')
 					tokens.add(ToyToken._equal);
 				else {
-					source.unread((int) peekChar);
+					pushback( peek);
 					tokens.add(ToyToken._assignop);
 				}
 				break;
 			case '!':
-				peekChar = (char)source.read();
-				if (peekChar == '=')
+				peek = readChar();
+				if (peek == '=')
 					tokens.add(ToyToken._notequal);
 				else {
-					source.unread((int) peekChar);
+					pushback( peek);
 					tokens.add(ToyToken._not);
 				}
 				break;		
 			case '&':
-				peekChar = (char)source.read();
-				if (peekChar == '&')
+				peek = readChar();
+				if (peek == '&')
 					tokens.add(ToyToken._and);
 				else {
-					source.unread((int) peekChar);
+					pushback( peek);
 					tokens.add(ToyToken._ERROR);
 				}
 				break;		
 			case '|':
-				peekChar = (char)source.read();
-				if (peekChar == '|')
+				peek = readChar();
+				if (peek == '|')
 					tokens.add(ToyToken._or);
 				else {
-					source.unread((int) peekChar);
+					pushback( peek);
 					tokens.add(ToyToken._ERROR);
 				}
 				break;
@@ -141,45 +148,93 @@ public class ToyLexicalAnalyzer {
 		}
 		
 		// IDENTIFIERS/KEYWORDS/BOOLEAN
-		if (Character.isLetter(currentChar)) {
+		if (Character.isLetter(curr)) {
 			StringBuilder sb = new StringBuilder();
-			sb.append(currentChar);
-			peekChar = (char)source.read();
+			sb.append(curr);
+			peek = readChar();
 			
-			while (Character.isLetterOrDigit(peekChar) || peekChar == '_') {
-				sb.append(peekChar);
-				peekChar = (char)source.read();
-			}		
+			while (Character.isLetterOrDigit(peek) || peek == '_') {
+				sb.append(peek);
+				peek = readChar();
+			}
+			pushback(peek);
 			String s = sb.toString();
 			
 			// determine if token should be id, keyword, or boolean
 			if (s.equals("true") || s.equals("false"))
-					tokens.add(ToyToken._booleanconstant);
-			
-			// if id, add to symbol table
-			//symTab.insert(s, false);
-			tokens.add(ToyToken._id);
+				tokens.add(ToyToken._booleanconstant);
+			else
+				tokens.add(ToyToken._id);
 		}
 		// DIGITS
-		if (Character.isDigit(currentChar)) {
-			peekChar = (char)source.read();
+		if (Character.isDigit(curr)) {
+			peek = readChar();
 			
-			// handle hex
-			if (currentChar == 0 && Character.toUpperCase(peekChar) == 'X') {
+			// handle hex int constants
+			if (curr == 0 && Character.toUpperCase(peek) == 'X') {
+				curr = readChar();
+				if (isHexDigit(curr)) {
+					tokens.add(ToyToken._intconstant);
+					while (isHexDigit(curr = readChar())) {}
+				}
+				else
+					tokens.add(ToyToken._ERROR);			
+			}
+			// handle decimal ints or doubles
+			else {
+				curr = peek;
+				while (Character.isDigit(curr))
+					curr = readChar();
+				
+				// double
+				if (curr == '.') {
+					tokens.add(ToyToken._doubleconstant);
+					while (Character.isDigit(curr = readChar())) {}
+				}
+				// decimal int constant
+				else {
+					tokens.add(ToyToken._intconstant);
+				}
 				
 			}
-			
-			// code to handle floating point)
 		}
 		
-		
-		
-		return -1;
 	}
 	
+	/**
+	 * 
+	 * @param c
+	 * @return
+	 */
+	private boolean isHexDigit(char c) {
+		c = Character.toUpperCase(c);
+		return Character.isDigit(c) || (c == 'A') || (c == 'B') || (c == 'C') ||
+				(c == 'D') || (c == 'E') || (c == 'F');
+	}
+	
+	/**
+	 * 
+	 * @param c
+	 * @return
+	 */
 	private boolean isWhiteSpace(char c) {
 		return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r');
-	}	
+	}
+	
+	
+	/**
+	 * Read next character from input stream
+	 * @return
+	 * @throws IOException
+	 */
+	private char readChar() throws IOException { return (char)source.read(); }
+	
+	/**
+	 * Push back a character into the input stream
+	 * @param c
+	 * @throws IOException
+	 */
+	private void pushback(char c) throws IOException { source.unread((int)c); }
 	
 	/**
 	 * 
@@ -326,20 +381,13 @@ public class ToyLexicalAnalyzer {
 		_id(47, "id"),
 		
 		// SPECIAL TOKENS FOR RECOGNIZING/IGNORING WHITESPACE
-		//_space(-1, "space"),
-		//_tab(-1, "tab"),
-		//_newline(-2, "newline"),
 		_carriageReturn(-1, "carriage"),
 		_eof(-2, "EOF"),
-		_ERROR(-3, "ERROR_TOKEN"),
-		_NO_TOKEN(-4, "NO TOKEN"); // program ends with whitespace
+		_ERROR(-3, "ERROR_TOKEN");
 		
 		private final int tokenNum;
 		private final String tokenString;
 		
-		/*ToyToken(int num) { 
-			this(num, null); 
-		}*/
 		
 		ToyToken(int num, String keyword) { 
 			tokenNum = num; tokenString = keyword;
@@ -349,4 +397,4 @@ public class ToyLexicalAnalyzer {
 		
 	}
 
-} // end of class ToyLexicalAnalyzer
+} // end of class ToyLexer
