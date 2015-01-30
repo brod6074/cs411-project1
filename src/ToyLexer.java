@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.io.PushbackReader;
+import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
 
@@ -9,22 +10,28 @@ import java.util.LinkedList;
  *
  */
 public class ToyLexer {
+	private static final char KEYWORD_TERMINAL = '!';
+	private static final char ID_TERMINAL = '@';
+	private static final char EOF_CHAR = (char) -1;
 	
 	private PushbackReader source;
 	private List<ToyToken> tokens;
 	private Trie symTab;
+	private boolean eofReached;
 	
 	public ToyLexer(PushbackReader source) {
 		this.source = source;
 		tokens = new LinkedList<ToyToken>();
 		symTab = new Trie();
+		eofReached = false;	
+		insertKeywords();
 	}
 	
 	
 	/**
 	 * Scans the input stream and constructs the next recognized token.
-	 * 
-	 * @return int representing the token class 
+	 * Whitespace and comments encountered are stripped out.
+	 *  
 	 */
 	public void scanNextToken() throws IOException {
 		char curr, peek;
@@ -41,13 +48,17 @@ public class ToyLexer {
 			// SINGLE LINE COMMENT: read chars until carriage return
 			if (peek == '/') {
 				while ((curr = readChar()) != '\r') {}
+				//tokens.add(ToyToken._carriageReturn);
 				curr = readChar();
 			}
 			// MULTI-LINE COMMENT: read chars until curr == '*' and peek == '/'
 			else if (peek == '*') {
 				curr = readChar();
 				peek = readChar();
-				while (curr != '*' && peek != '/') {
+				while (curr != '*' || peek != '/') {
+					//if (curr == '*')
+					//if (peek == '\r')
+						//tokens.add(ToyToken._carriageReturn);
 					curr = peek;
 					peek = readChar();
 				}
@@ -66,25 +77,33 @@ public class ToyLexer {
 		// OPERATORS
 		switch (curr) {
 		
+			// HANDLE EOF
+			case EOF_CHAR:
+			tokens.add(ToyToken._eof);
+			eofReached = true;
+			break;
+		
 			// HANDLE STRING CONSTANTS
-			//case '"':
-				//break;
+			case '"':
+				while ((curr = readChar()) != '"') {}
+				tokens.add(ToyToken._stringconstant);
+				break;
 			
 			// HANDLE SINGLE CHAR SYMBOLS/OPERATORS
-			case '+': tokens.add(ToyToken._plus); break;
-			case '-': tokens.add(ToyToken._minus); break;
+			case '+': tokens.add(ToyToken._plus); 			break;
+			case '-': tokens.add(ToyToken._minus); 			break;
 			case '*': tokens.add(ToyToken._multiplication); break;
-			case '/': tokens.add(ToyToken._division); break;
-			case '%': tokens.add(ToyToken._mod); break;
-			case ';': tokens.add(ToyToken._semicolon); break;
-			case ',': tokens.add(ToyToken._comma); break;
-			case '.': tokens.add(ToyToken._period); break;
-			case '(': tokens.add(ToyToken._leftparen); break;
-			case ')': tokens.add(ToyToken._rightparen); break;
-			case '[': tokens.add(ToyToken._leftbracket); break;
-			case ']': tokens.add(ToyToken._rightbracket); break;
-			case '{': tokens.add(ToyToken._leftbrace); break;
-			case '}': tokens.add(ToyToken._rightbrace); break;
+			case '/': tokens.add(ToyToken._division); 		break;
+			case '%': tokens.add(ToyToken._mod); 			break;
+			case ';': tokens.add(ToyToken._semicolon); 		break;
+			case ',': tokens.add(ToyToken._comma); 			break;
+			case '.': tokens.add(ToyToken._period); 		break;
+			case '(': tokens.add(ToyToken._leftparen); 		break;
+			case ')': tokens.add(ToyToken._rightparen); 	break;
+			case '[': tokens.add(ToyToken._leftbracket); 	break;
+			case ']': tokens.add(ToyToken._rightbracket); 	break;
+			case '{': tokens.add(ToyToken._leftbrace); 		break;
+			case '}': tokens.add(ToyToken._rightbrace); 	break;
 				
 			// HANDLE POSSIBLE MULTI CHAR OPERATORS
 			case '<':
@@ -140,14 +159,10 @@ public class ToyLexer {
 					pushback( peek);
 					tokens.add(ToyToken._ERROR);
 				}
-				break;
-				
-			
-			default:
-				// OTHER ERROR
+				break;		
 		}
 		
-		// IDENTIFIERS/KEYWORDS/BOOLEAN
+		// IDENTIFIERS/KEYWORDS/BOOLEAN_CONSTANTS
 		if (Character.isLetter(curr)) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(curr);
@@ -161,13 +176,55 @@ public class ToyLexer {
 			String s = sb.toString();
 			
 			// determine if token should be id, keyword, or boolean
-			if (s.equals("true") || s.equals("false"))
-				tokens.add(ToyToken._booleanconstant);
-			else
+			switch (s) {
+			case "true":
+			case "false":
+				tokens.add(ToyToken._booleanconstant); break;
+			case "boolean":
+				tokens.add(ToyToken._boolean); break;
+			case "break":
+				tokens.add(ToyToken._break); break;
+			case "class":
+				tokens.add(ToyToken._class); break;
+			case "double":
+				tokens.add(ToyToken._double); break;
+			case "else":
+				tokens.add(ToyToken._else); break;
+			case "extends":
+				tokens.add(ToyToken._extends); break;
+			case "for":
+				tokens.add(ToyToken._for); break;
+			case "if":
+				tokens.add(ToyToken._if); break;
+			case "implements":
+				tokens.add(ToyToken._implements); break;
+			case "int":
+				tokens.add(ToyToken._int); break;
+			case "interface":
+				tokens.add(ToyToken._interface); break;
+			case "newarray":
+				tokens.add(ToyToken._newarray); break;
+			case "println":
+				tokens.add(ToyToken._println); break;
+			case "readln":
+				tokens.add(ToyToken._readln); break;
+			case "return":
+				tokens.add(ToyToken._return); break;
+			case "string":
+				tokens.add(ToyToken._string); break;
+			case "void":
+				tokens.add(ToyToken._void); break;
+			case "while":
+				tokens.add(ToyToken._while); break;
+			default:
 				tokens.add(ToyToken._id);
+				//if (!symTab.search(s))
+				//	symTab.insert(s, ID_TERMINAL);
+			}
+			
 		}
 		// DIGITS
-		if (Character.isDigit(curr)) {
+		else if (Character.isDigit(curr)) {
 			peek = readChar();
 			
 			// handle hex int constants
@@ -194,6 +251,7 @@ public class ToyLexer {
 				// decimal int constant
 				else {
 					tokens.add(ToyToken._intconstant);
+					pushback(curr);
 				}
 				
 			}
@@ -212,12 +270,29 @@ public class ToyLexer {
 				(c == 'D') || (c == 'E') || (c == 'F');
 	}
 	
+	public boolean isEOF() {
+		return eofReached;
+	}
+	
+	public void dumpTokens() {
+		Iterator<ToyToken> iter = tokens.iterator();
+		while (iter.hasNext()) {
+			ToyToken t = iter.next();
+			if (t.toString().equals("carriage"))
+				System.out.println();
+			else if (!t.toString().equals("EOF"))
+				System.out.print(t.toString() + " ");
+		}
+	}
+	
 	/**
 	 * 
 	 * @param c
 	 * @return
 	 */
 	private boolean isWhiteSpace(char c) {
+		if (c == '\r')
+			tokens.add(ToyToken._carriageReturn);
 		return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r');
 	}
 	
@@ -236,17 +311,42 @@ public class ToyLexer {
 	 */
 	private void pushback(char c) throws IOException { source.unread((int)c); }
 	
+	private void insertKeywords() {
+		symTab.insert("boolean", KEYWORD_TERMINAL);
+		symTab.insert("break", KEYWORD_TERMINAL);
+		symTab.insert("class", KEYWORD_TERMINAL);
+		symTab.insert("double", KEYWORD_TERMINAL);
+		symTab.insert("else", KEYWORD_TERMINAL);
+		symTab.insert("extends", KEYWORD_TERMINAL);
+		symTab.insert("false", KEYWORD_TERMINAL);
+		symTab.insert("for", KEYWORD_TERMINAL);
+		symTab.insert("if", KEYWORD_TERMINAL);
+		symTab.insert("implements", KEYWORD_TERMINAL);
+		symTab.insert("int", KEYWORD_TERMINAL);
+		symTab.insert("interface", KEYWORD_TERMINAL);
+		symTab.insert("newarray", KEYWORD_TERMINAL);
+		symTab.insert("println", KEYWORD_TERMINAL);
+		symTab.insert("readln", KEYWORD_TERMINAL);
+		symTab.insert("return", KEYWORD_TERMINAL);
+		symTab.insert("string", KEYWORD_TERMINAL);
+		symTab.insert("true", KEYWORD_TERMINAL);
+		symTab.insert("void", KEYWORD_TERMINAL);
+		symTab.insert("while", KEYWORD_TERMINAL);
+	}
+	
+	public void dumpSymbolTable() {
+		symTab.dumpSymbolTable();
+	}
+	
 	/**
 	 * 
 	 * Trie
 	 *
 	 */
 	private static class Trie {
-		private static final int MAX_TRANSITION = 63;
+		private static final int MAX_TRANSITION = 300;
 		private static final int ALPHABETIC_CHARS = 52;
 		private static final int EMPTY = -1;
-		private static final char KEYWORD_TERMINAL = '!';
-		private static final char ID_TERMINAL = '@';
 		
 		private int 	nextFreeSpot;
 		private int[] 	trieSwitch;
@@ -268,7 +368,39 @@ public class ToyLexer {
 			}
 		}
 		
-		void insert(String s, boolean isKeyword) {
+		public void dumpSymbolTable() {
+			System.out.print("\t");
+			for (char c = 'A'; c <= 'Z'; c++)
+				System.out.print(c + "   ");
+			for (char c = 'a'; c <= 'z'; c++)
+				System.out.print(c + " ");
+			System.out.println();
+			System.out.print("switch: ");
+			for (int i = 0; i < ALPHABETIC_CHARS; i++)
+				System.out.print(trieNext[i] + "  ");
+		}
+		
+		boolean search(String s) {
+			// use first character to determine index in switch array
+			char c = s.charAt(0);
+			int switchIndex = getSwitchIndex(c);
+			
+			int currPos = trieSwitch[switchIndex];
+			for (int i = 1; i < s.length(); i++) {
+				c = s.charAt(i);
+				while (c != trieSymbol[currPos]) {
+					currPos = trieNext[currPos];
+				}
+				currPos++;
+			}
+			if (trieSymbol[currPos] == ID_TERMINAL || trieSymbol[currPos] == KEYWORD_TERMINAL)
+				return true;
+			else
+				return false;
+			
+		}
+		
+		void insert(String s, char terminal) {
 			// use first character to determine index in switch array
 			char c = s.charAt(0);
 			int switchIndex = getSwitchIndex(c);
@@ -287,9 +419,11 @@ public class ToyLexer {
 						currPos = nextFreeSpot;
 						
 					} else {
-						while (trieSymbol[currPos] != ' ' ||
-								trieSymbol[currPos] != c)
+						while (trieSymbol[currPos] != ' ' && trieSymbol[currPos] != c) {
 							currPos = trieNext[currPos];
+							if (trieNext[currPos] == EMPTY)
+								trieNext[currPos] = nextFreeSpot;
+						}
 					}
 					trieSymbol[currPos++] = c;
 				}
@@ -302,32 +436,23 @@ public class ToyLexer {
 					trieNext[currPos] = nextFreeSpot;
 					
 				currPos = trieNext[currPos];
-			}
+			}		
 			
-			
-			
-			if (isKeyword)
-				trieSymbol[currPos++] = KEYWORD_TERMINAL;
-			else
-				trieSymbol[currPos++] = ID_TERMINAL;
-			
-			
+			trieSymbol[currPos++] = terminal;						
 			nextFreeSpot = currPos;		
 		}
 		
-		boolean isReserved(String s) {
-			return true;
-		}
-		
 		/**
-		 * Returns an appropriate number (between 0 and ALPHABETIC_CHARS - 1) 
-		 * for indexing into the switch array depending on the char parameter.
+		 * Returns an index number for the switch array in the symbol table.
 		 *  
-		 * @param c
-		 * @return
+		 * @param c - character of first element in the string
+		 * @return index corresponding to the character
 		 */
 		private int getSwitchIndex(char c) {
-			return ((int) c) - 65;
+			if (Character.isUpperCase(c))
+				return ((int) c) - 65;
+			else
+				return ((int) c) - 71;
 		}
 	}
 	
@@ -344,7 +469,7 @@ public class ToyLexer {
 		_int(10, "int"),
 		_interface(11, "interface"),
 		_newarray(12, "newarray"),
-		_printl(13, "println"),
+		_println(13, "println"),
 		_readln(14, "readln"), 
 		_return(15, "return"),
 		_string(16, "string"),
@@ -352,7 +477,7 @@ public class ToyLexer {
 		_while(18, "while"),
 		_plus(19, "plus"),
 		_minus(20, "minus"),
-		_multiplication(21, "multiplicaiton"),
+		_multiplication(21, "multiplication"),
 		_division(22, "division"),
 		_mod(23, "mod"),
 		_less(24, "less"),
@@ -394,6 +519,8 @@ public class ToyLexer {
 		}
 		
 		public int getTokenNumber() { return tokenNum; }
+		
+		public String toString() { return tokenString; }
 		
 	}
 
