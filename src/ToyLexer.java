@@ -6,90 +6,61 @@ import java.util.LinkedList;
 
 /**
  * 
- * ToyLexer
+ * @author Roberto Rodriguez
+ * 
+ * This class implements a lexical analyzer for the Toy language
  *
  */
 public class ToyLexer {
-	private static final char KEYWORD_TERMINAL = '!';
-	private static final char ID_TERMINAL = '@';
 	private static final char EOF_CHAR = (char) -1;
 	
-	private PushbackReader source;
-	private List<ToyToken> tokens;
-	private Trie symTab;
-	private boolean eofReached;
+	private PushbackReader 	source;
+	private List<ToyToken> 	tokens;
+	private Trie 			symTab;
+	private boolean 		eofReached;
 	
+	
+	/**
+	 * Constructor
+	 * 
+	 * @param source - a PushbackReader containing a stream to the input file
+	 */
 	public ToyLexer(PushbackReader source) {
 		this.source = source;
 		tokens = new LinkedList<ToyToken>();
 		symTab = new Trie();
 		eofReached = false;	
-		insertKeywords();
+		insertKeywords(); // initialize the symbol table with the keywords
 	}
 	
 	
 	/**
 	 * Scans the input stream and constructs the next recognized token.
 	 * Whitespace and comments encountered are stripped out.
+	 * 
+	 * The next token scanned is added to the tokens list.
 	 *  
 	 */
 	public void scanNextToken() throws IOException {
 		char curr, peek;
-		curr = readChar();
+		curr = nextUsefulChar();
 		
-		// skip whitespace
-		while (isWhiteSpace(curr))
-			curr = readChar();
-		
-		// HANDLE DVISION/SINGLE COMMENT/OR MULTI COMMENT
-		while (curr == '/') {
-			peek = readChar();
-			
-			// SINGLE LINE COMMENT: read chars until carriage return
-			if (peek == '/') {
-				while ((curr = readChar()) != '\r') {}
-				//tokens.add(ToyToken._carriageReturn);
-				curr = readChar();
-			}
-			// MULTI-LINE COMMENT: read chars until curr == '*' and peek == '/'
-			else if (peek == '*') {
-				curr = readChar();
-				peek = readChar();
-				while (curr != '*' || peek != '/') {
-					//if (curr == '*')
-					//if (peek == '\r')
-						//tokens.add(ToyToken._carriageReturn);
-					curr = peek;
-					peek = readChar();
-				}
-				curr = readChar();
-			} 
-			else {
-				pushback(peek);
-				break;
-			}
-		}
-		
-		// skip more whitespace if comments were read
-		while (isWhiteSpace(curr))
-			curr = readChar();
-		
-		// OPERATORS
+		// HANDLE OPERATORS
 		switch (curr) {
 		
-			// HANDLE EOF
+			// EOF
 			case EOF_CHAR:
 			tokens.add(ToyToken._eof);
 			eofReached = true;
 			break;
 		
-			// HANDLE STRING CONSTANTS
+			// STRING CONSTANTS
 			case '"':
 				while ((curr = readChar()) != '"') {}
 				tokens.add(ToyToken._stringconstant);
 				break;
 			
-			// HANDLE SINGLE CHAR SYMBOLS/OPERATORS
+			// SINGLE CHAR SYMBOLS/OPERATORS
 			case '+': tokens.add(ToyToken._plus); 			break;
 			case '-': tokens.add(ToyToken._minus); 			break;
 			case '*': tokens.add(ToyToken._multiplication); break;
@@ -105,7 +76,7 @@ public class ToyLexer {
 			case '{': tokens.add(ToyToken._leftbrace); 		break;
 			case '}': tokens.add(ToyToken._rightbrace); 	break;
 				
-			// HANDLE POSSIBLE MULTI CHAR OPERATORS
+			// MULTI-CHAR OPERATORS
 			case '<':
 				peek = readChar();
 				if (peek == '=')
@@ -162,7 +133,7 @@ public class ToyLexer {
 				break;		
 		}
 		
-		// IDENTIFIERS/KEYWORDS/BOOLEAN_CONSTANTS
+		// IDENTIFIERS/KEYWORDS/BOOLEAN CONSTANTS
 		if (Character.isLetter(curr)) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(curr);
@@ -179,43 +150,43 @@ public class ToyLexer {
 			switch (s) {
 			case "true":
 			case "false":
-				tokens.add(ToyToken._booleanconstant); break;
+				tokens.add(ToyToken._booleanconstant); 	break;
 			case "boolean":
-				tokens.add(ToyToken._boolean); break;
+				tokens.add(ToyToken._boolean); 			break;
 			case "break":
-				tokens.add(ToyToken._break); break;
+				tokens.add(ToyToken._break); 			break;
 			case "class":
-				tokens.add(ToyToken._class); break;
+				tokens.add(ToyToken._class); 			break;
 			case "double":
-				tokens.add(ToyToken._double); break;
+				tokens.add(ToyToken._double); 			break;
 			case "else":
-				tokens.add(ToyToken._else); break;
+				tokens.add(ToyToken._else); 			break;
 			case "extends":
-				tokens.add(ToyToken._extends); break;
+				tokens.add(ToyToken._extends); 			break;
 			case "for":
-				tokens.add(ToyToken._for); break;
+				tokens.add(ToyToken._for); 				break;
 			case "if":
-				tokens.add(ToyToken._if); break;
+				tokens.add(ToyToken._if); 				break;
 			case "implements":
-				tokens.add(ToyToken._implements); break;
+				tokens.add(ToyToken._implements); 		break;
 			case "int":
-				tokens.add(ToyToken._int); break;
+				tokens.add(ToyToken._int); 				break;
 			case "interface":
-				tokens.add(ToyToken._interface); break;
+				tokens.add(ToyToken._interface); 		break;
 			case "newarray":
-				tokens.add(ToyToken._newarray); break;
+				tokens.add(ToyToken._newarray); 		break;
 			case "println":
-				tokens.add(ToyToken._println); break;
+				tokens.add(ToyToken._println); 			break;
 			case "readln":
-				tokens.add(ToyToken._readln); break;
+				tokens.add(ToyToken._readln); 			break;
 			case "return":
-				tokens.add(ToyToken._return); break;
+				tokens.add(ToyToken._return); 			break;
 			case "string":
-				tokens.add(ToyToken._string); break;
+				tokens.add(ToyToken._string); 			break;
 			case "void":
-				tokens.add(ToyToken._void); break;
+				tokens.add(ToyToken._void); 			break;
 			case "while":
-				tokens.add(ToyToken._while); break;
+				tokens.add(ToyToken._while); 			break;
 			default:
 				tokens.add(ToyToken._id);
 				//if (!symTab.search(s))
@@ -227,42 +198,92 @@ public class ToyLexer {
 		else if (Character.isDigit(curr)) {
 			peek = readChar();
 			
-			// handle hex int constants
-			if (curr == 0 && Character.toUpperCase(peek) == 'X') {
+			// HEX INT
+			if (curr == '0' && Character.toUpperCase(peek) == 'X') {
 				curr = readChar();
 				if (isHexDigit(curr)) {
 					tokens.add(ToyToken._intconstant);
 					while (isHexDigit(curr = readChar())) {}
+					pushback(curr);
 				}
 				else
 					tokens.add(ToyToken._ERROR);			
 			}
-			// handle decimal ints or doubles
+			// DOUBLES AND DECIMAL INTS
 			else {
-				curr = peek;
+				pushback(peek);
 				while (Character.isDigit(curr))
 					curr = readChar();
 				
-				// double
+				// DOUBLE
 				if (curr == '.') {
 					tokens.add(ToyToken._doubleconstant);
-					while (Character.isDigit(curr = readChar())) {}
+					handleDouble();
 				}
-				// decimal int constant
+				// DECIMAL INT
 				else {
+					if (Character.toUpperCase(curr) == 'E')
+						handleExponent(curr);
 					tokens.add(ToyToken._intconstant);
-					pushback(curr);
 				}
-				
 			}
 		}
-		
 	}
 	
 	/**
+	 * Handles double constants. Method is called ONLY after a '.' has been
+	 * read in from the input stream. 
+	 */
+	private void handleDouble() throws IOException {
+		char curr, peek1, peek2;
+		
+		while (Character.isDigit(curr = readChar())) {}
+		
+		// DOUBLE WITH EXPONENT
+		if (Character.toUpperCase(curr) == 'E') {
+			handleExponent(curr);
+		// DOUBLE WITHOUT EXPONENT	
+		} else {
+			pushback(curr);
+		}
+	}
+	
+	/**
+	 * Method consumes valid characters for exponent.
+	 * @param curr - character with value of 'E' or 'e'
+	 * @throws IOException
+	 */
+	private void handleExponent(char curr) throws IOException{
+		char peek1, peek2;
+		
+		peek1 = readChar();
+		// E####
+		if (Character.isDigit(peek1)) {
+			while (Character.isDigit(peek1 = readChar())) {}
+			pushback(peek1);
+		// E+ or E-
+		} else if (peek1 == '-' || peek1 == '+') {
+			peek2 = readChar();
+			// at least 1 char after +/- to be valid
+			if (Character.isDigit(peek2)) {
+				while (Character.isDigit(peek2 = readChar())) {}
+				pushback(peek2);
+			}
+			// invalid exponential form, push back chars that will used
+			// for other tokens
+			else {
+				pushback(peek2); 	// pushback char after +/-
+				pushback(peek1); 	// pushback + or -
+				pushback(curr); 	// pushback e or E
+			}
+		}
+	}
+	
+	/**
+	 * Checks if character is a valid hex digit
 	 * 
-	 * @param c
-	 * @return
+	 * @param c - char to be checked
+	 * @return - true if c is a hex digit, false otherwise
 	 */
 	private boolean isHexDigit(char c) {
 		c = Character.toUpperCase(c);
@@ -296,6 +317,48 @@ public class ToyLexer {
 		return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r');
 	}
 	
+	private char nextUsefulChar() throws IOException {
+		char curr = readChar();
+		char peek;
+		boolean usefulChar = false;
+		
+		do {
+			while (isWhiteSpace(curr)) {
+				curr = readChar();
+			}
+			
+			if (curr == '/') {
+				peek = readChar();
+				switch (peek) {
+				case '/':
+					while ((curr = readChar()) != '\r') {}
+					curr = readChar();
+					break;
+				case '*':
+					curr = readChar();
+					peek = readChar();
+					while (curr != '*' || peek != '/') {
+						if (curr == '\r')
+							tokens.add(ToyToken._carriageReturn);
+						curr = peek;
+						peek = readChar();
+					}
+					curr = readChar();
+					break;
+				default:
+					pushback(peek);
+					usefulChar = true;
+				}
+			} else {
+				usefulChar = true;
+			}
+			
+		} while (usefulChar == false);
+		
+		
+		return curr;
+	}
+	
 	
 	/**
 	 * Read next character from input stream
@@ -312,26 +375,26 @@ public class ToyLexer {
 	private void pushback(char c) throws IOException { source.unread((int)c); }
 	
 	private void insertKeywords() {
-		symTab.insert("boolean", KEYWORD_TERMINAL);
-		symTab.insert("break", KEYWORD_TERMINAL);
-		symTab.insert("class", KEYWORD_TERMINAL);
-		symTab.insert("double", KEYWORD_TERMINAL);
-		symTab.insert("else", KEYWORD_TERMINAL);
-		symTab.insert("extends", KEYWORD_TERMINAL);
-		symTab.insert("false", KEYWORD_TERMINAL);
-		symTab.insert("for", KEYWORD_TERMINAL);
-		symTab.insert("if", KEYWORD_TERMINAL);
-		symTab.insert("implements", KEYWORD_TERMINAL);
-		symTab.insert("int", KEYWORD_TERMINAL);
-		symTab.insert("interface", KEYWORD_TERMINAL);
-		symTab.insert("newarray", KEYWORD_TERMINAL);
-		symTab.insert("println", KEYWORD_TERMINAL);
-		symTab.insert("readln", KEYWORD_TERMINAL);
-		symTab.insert("return", KEYWORD_TERMINAL);
-		symTab.insert("string", KEYWORD_TERMINAL);
-		symTab.insert("true", KEYWORD_TERMINAL);
-		symTab.insert("void", KEYWORD_TERMINAL);
-		symTab.insert("while", KEYWORD_TERMINAL);
+		symTab.insert("boolean");
+		symTab.insert("break");
+		symTab.insert("class");
+		symTab.insert("double");
+		symTab.insert("else");
+		symTab.insert("extends");
+		symTab.insert("false");
+		symTab.insert("for");
+		symTab.insert("if");
+		symTab.insert("implements");
+		symTab.insert("int");
+		symTab.insert("interface");
+		symTab.insert("newarray");
+		symTab.insert("println");
+		symTab.insert("readln");
+		symTab.insert("return");
+		symTab.insert("string");
+		symTab.insert("true");
+		symTab.insert("void");
+		symTab.insert("while");
 	}
 	
 	public void dumpSymbolTable() {
@@ -368,6 +431,9 @@ public class ToyLexer {
 			}
 		}
 		
+		/**
+		 * Prints out contents of symbol table to System.out
+		 */
 		public void dumpSymbolTable() {
 			System.out.print("\t");
 			for (char c = 'A'; c <= 'Z'; c++)
@@ -380,6 +446,13 @@ public class ToyLexer {
 				System.out.print(trieNext[i] + "  ");
 		}
 		
+		/**
+		 * Searches the symbol table for an existing entry in the symbol table.
+		 * Returns true if exists, false otherwise
+		 * 
+		 * @param s - the string to be searched for
+		 * @return - boolean representing successful search
+		 */
 		boolean search(String s) {
 			// use first character to determine index in switch array
 			char c = s.charAt(0);
@@ -393,14 +466,18 @@ public class ToyLexer {
 				}
 				currPos++;
 			}
-			if (trieSymbol[currPos] == ID_TERMINAL || trieSymbol[currPos] == KEYWORD_TERMINAL)
+			if (trieSymbol[currPos] == '@')
 				return true;
 			else
 				return false;
 			
 		}
 		
-		void insert(String s, char terminal) {
+		/**
+		 * Insert a string into the symbol table
+		 * @param s - string to be inserted
+		 */
+		void insert(String s) {
 			// use first character to determine index in switch array
 			char c = s.charAt(0);
 			int switchIndex = getSwitchIndex(c);
@@ -438,7 +515,7 @@ public class ToyLexer {
 				currPos = trieNext[currPos];
 			}		
 			
-			trieSymbol[currPos++] = terminal;						
+			trieSymbol[currPos++] = '@';						
 			nextFreeSpot = currPos;		
 		}
 		
@@ -454,7 +531,7 @@ public class ToyLexer {
 			else
 				return ((int) c) - 71;
 		}
-	}
+	} // end of class Trie
 	
 	private enum ToyToken {
 		_boolean(1, "boolean"),
@@ -504,11 +581,9 @@ public class ToyLexer {
 		_stringconstant(45, "stringconstant"),
 		_booleanconstant(46, "booleanconstant"),
 		_id(47, "id"),
-		
-		// SPECIAL TOKENS FOR RECOGNIZING/IGNORING WHITESPACE
-		_carriageReturn(-1, "carriage"),
-		_eof(-2, "EOF"),
-		_ERROR(-3, "ERROR_TOKEN");
+		_carriageReturn(48, "carriage"),
+		_eof(49, "EOF"),
+		_ERROR(50, "ERROR_TOKEN");
 		
 		private final int tokenNum;
 		private final String tokenString;
@@ -518,10 +593,9 @@ public class ToyLexer {
 			tokenNum = num; tokenString = keyword;
 		}
 		
-		public int getTokenNumber() { return tokenNum; }
-		
+		public int getTokenNumber() { return tokenNum; }		
 		public String toString() { return tokenString; }
 		
-	}
+	} // end of enum ToyToken
 
 } // end of class ToyLexer
