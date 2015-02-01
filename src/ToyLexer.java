@@ -190,7 +190,7 @@ public class ToyLexer {
 			default:
 				tokens.add(ToyToken._id);
 				//if (!symTab.search(s))
-				//	symTab.insert(s, ID_TERMINAL);
+					symTab.insert(s);
 			}
 			
 		}
@@ -235,7 +235,7 @@ public class ToyLexer {
 	 * read in from the input stream. 
 	 */
 	private void handleDouble() throws IOException {
-		char curr, peek1, peek2;
+		char curr;
 		
 		while (Character.isDigit(curr = readChar())) {}
 		
@@ -437,47 +437,21 @@ public class ToyLexer {
 		public void dumpSymbolTable() {
 			System.out.print("\t");
 			for (char c = 'A'; c <= 'Z'; c++)
-				System.out.print(c + "   ");
-			for (char c = 'a'; c <= 'z'; c++)
-				System.out.print(c + " ");
+				System.out.print(c + "    ");
 			System.out.println();
 			System.out.print("switch: ");
-			for (int i = 0; i < ALPHABETIC_CHARS; i++)
-				System.out.print(trieNext[i] + "  ");
+			for (int i = getSwitchIndex('A'); i < getSwitchIndex('Z'); i++)
+				System.out.print(trieSwitch[i] + "   ");
+			
 		}
 		
 		/**
-		 * Searches the symbol table for an existing entry in the symbol table.
-		 * Returns true if exists, false otherwise
+		 * Inserts a string into the trie table.
 		 * 
-		 * @param s - the string to be searched for
-		 * @return - boolean representing successful search
-		 */
-		boolean search(String s) {
-			// use first character to determine index in switch array
-			char c = s.charAt(0);
-			int switchIndex = getSwitchIndex(c);
-			
-			int currPos = trieSwitch[switchIndex];
-			for (int i = 1; i < s.length(); i++) {
-				c = s.charAt(i);
-				while (c != trieSymbol[currPos]) {
-					currPos = trieNext[currPos];
-				}
-				currPos++;
-			}
-			if (trieSymbol[currPos] == '@')
-				return true;
-			else
-				return false;
-			
-		}
-		
-		/**
-		 * Insert a string into the symbol table
 		 * @param s - string to be inserted
+		 * @return true if s inserted into table, false if s already exists
 		 */
-		void insert(String s) {
+		boolean insert(String s) {
 			// use first character to determine index in switch array
 			char c = s.charAt(0);
 			int switchIndex = getSwitchIndex(c);
@@ -498,12 +472,18 @@ public class ToyLexer {
 					} else {
 						while (trieSymbol[currPos] != ' ' && trieSymbol[currPos] != c) {
 							currPos = trieNext[currPos];
-							if (trieNext[currPos] == EMPTY)
+							if (trieNext[currPos] == EMPTY) {
 								trieNext[currPos] = nextFreeSpot;
+								currPos = nextFreeSpot;
+							}
 						}
 					}
 					trieSymbol[currPos++] = c;
 				}
+			}
+			
+			if (trieSymbol[currPos] == '@') {
+				return false;
 			}
 			
 			// word is smaller than similar, previously inserted words
@@ -515,8 +495,9 @@ public class ToyLexer {
 				currPos = trieNext[currPos];
 			}		
 			
-			trieSymbol[currPos++] = '@';						
+			trieSymbol[currPos++] = '@';	
 			nextFreeSpot = currPos;		
+			return true;
 		}
 		
 		/**
@@ -531,6 +512,10 @@ public class ToyLexer {
 			else
 				return ((int) c) - 71;
 		}
+		
+		
+		
+		
 	} // end of class Trie
 	
 	private enum ToyToken {
