@@ -15,7 +15,7 @@ public class Client {
 		while (!toyLexer.isEOF())
 			toyLexer.scanNextToken();	
 		
-//		toyLexer.dumpTokens();
-		toyLexer.dumpSymbolTable();	
+		toyLexer.dumpTokens();
+//		toyLexer.dumpSymbolTable();	
 	}
 }
