@@ -16,6 +16,8 @@ public class Client {
 			toyLexer.scanNextToken();	
 		
 		toyLexer.dumpTokens();
-//		toyLexer.dumpSymbolTable();	
+		System.out.println();
+		System.out.println();
+		toyLexer.dumpSymbolTable();	
 	}
 }

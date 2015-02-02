@@ -5,11 +5,7 @@ import java.util.List;
 import java.util.LinkedList;
 
 /**
- * 
- * @author Roberto Rodriguez
- * 
  * This class implements a lexical analyzer for the Toy language
- *
  */
 public class ToyLexer {
 	private static final char EOF_CHAR = (char) -1;
@@ -39,7 +35,6 @@ public class ToyLexer {
 	 * Whitespace and comments encountered are stripped out.
 	 * 
 	 * The next token scanned is added to the tokens list.
-	 *  
 	 */
 	public void scanNextToken() throws IOException {
 		char curr, peek;
@@ -189,7 +184,6 @@ public class ToyLexer {
 				tokens.add(ToyToken._while); 			break;
 			default:
 				tokens.add(ToyToken._id);
-				//if (!symTab.search(s))
 					symTab.insert(s);
 			}
 			
@@ -222,13 +216,13 @@ public class ToyLexer {
 				}
 				// DECIMAL INT
 				else {
-					if (Character.toUpperCase(curr) == 'E')
-						handleExponent(curr);
+					pushback(curr);
 					tokens.add(ToyToken._intconstant);
 				}
 			}
 		}
 	}
+	
 	
 	/**
 	 * Handles double constants. Method is called ONLY after a '.' has been
@@ -248,8 +242,10 @@ public class ToyLexer {
 		}
 	}
 	
+	
 	/**
 	 * Method consumes valid characters for exponent.
+	 * 
 	 * @param curr - character with value of 'E' or 'e'
 	 * @throws IOException
 	 */
@@ -279,6 +275,7 @@ public class ToyLexer {
 		}
 	}
 	
+	
 	/**
 	 * Checks if character is a valid hex digit
 	 * 
@@ -291,10 +288,20 @@ public class ToyLexer {
 				(c == 'D') || (c == 'E') || (c == 'F');
 	}
 	
+	
+	/**
+	 * Checks if end of file was reached
+	 * 
+	 * @return true is end of file reached, false otherise
+	 */
 	public boolean isEOF() {
 		return eofReached;
 	}
 	
+	
+	/**
+	 * Prints out the tokens to System.out
+	 */
 	public void dumpTokens() {
 		Iterator<ToyToken> iter = tokens.iterator();
 		while (iter.hasNext()) {
@@ -306,10 +313,12 @@ public class ToyLexer {
 		}
 	}
 	
+	
 	/**
+	 * Checks if parameter c is a whitespace character
 	 * 
-	 * @param c
-	 * @return
+	 * @param c - char to be checked
+	 * @return true if c is whitespace, false otherwise
 	 */
 	private boolean isWhiteSpace(char c) {
 		if (c == '\r')
@@ -317,6 +326,14 @@ public class ToyLexer {
 		return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r');
 	}
 	
+	
+	/**
+	 * Gets the first non-whitespace character for the lexer to begin token
+	 * determination.
+	 * 
+	 * @return non-whitespace character
+	 * @throws IOException
+	 */
 	private char nextUsefulChar() throws IOException {
 		char curr = readChar();
 		char peek;
@@ -327,10 +344,12 @@ public class ToyLexer {
 				curr = readChar();
 			}
 			
+			// DETERMINE IF SINGLE LINE COMMENT/MULTI-LINE COMMENT/DIVISION OPERATOR
 			if (curr == '/') {
 				peek = readChar();
 				switch (peek) {
 				case '/':
+					tokens.add(ToyToken._carriageReturn);
 					while ((curr = readChar()) != '\r') {}
 					curr = readChar();
 					break;
@@ -362,18 +381,25 @@ public class ToyLexer {
 	
 	/**
 	 * Read next character from input stream
+	 * 
 	 * @return
 	 * @throws IOException
 	 */
 	private char readChar() throws IOException { return (char)source.read(); }
 	
+	
 	/**
 	 * Push back a character into the input stream
+	 * 
 	 * @param c
 	 * @throws IOException
 	 */
 	private void pushback(char c) throws IOException { source.unread((int)c); }
 	
+	
+	/**
+	 * Insert the keywords of the Toy language into the symbol table
+	 */
 	private void insertKeywords() {
 		symTab.insert("boolean");
 		symTab.insert("break");
@@ -397,25 +423,36 @@ public class ToyLexer {
 		symTab.insert("while");
 	}
 	
+	
 	public void dumpSymbolTable() {
-		symTab.dumpSymbolTable();
+		symTab.prettyPrint(15);
 	}
 	
+	
 	/**
-	 * 
-	 * Trie
+	 * This class implements a Trie data structure to be used as a symbol
+	 * table for the lexical analyzer.
 	 *
 	 */
 	private static class Trie {
-		private static final int MAX_TRANSITION = 300;
+		private static final int MAX_TRANSITION = 250;
 		private static final int ALPHABETIC_CHARS = 52;
-		private static final int EMPTY = -1;
+		private static final int EMPTY = -1;		
+		private static final char[] alphabet = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'
+            , 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'
+            , 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'
+            , 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v'
+            , 'w', 'x', 'y', 'z'};
 		
 		private int 	nextFreeSpot;
 		private int[] 	trieSwitch;
 		private char[] 	trieSymbol;
-		private int[] 	trieNext;
+		private int[] 	trieNext;	
+
 		
+		/**
+		 * Constructor
+		 */
 		public Trie() {
 			nextFreeSpot = 0;
 			
@@ -431,19 +468,72 @@ public class ToyLexer {
 			}
 		}
 		
-		/**
-		 * Prints out contents of symbol table to System.out
-		 */
-		public void dumpSymbolTable() {
-			System.out.print("\t");
-			for (char c = 'A'; c <= 'Z'; c++)
-				System.out.print(c + "    ");
-			System.out.println();
-			System.out.print("switch: ");
-			for (int i = getSwitchIndex('A'); i < getSwitchIndex('Z'); i++)
-				System.out.print(trieSwitch[i] + "   ");
-			
-		}
+		
+		
+		//Prints out the contents of this trie in a columnated format
+		// **WRITTEN BY JACOB BUCHOWIECKI**
+	    public void prettyPrint (int cols) {
+	        //Print alphabet and switch array
+	        int i = 0;
+	        while (i < alphabet.length) {
+	            System.out.printf("%7s\t", "");
+	            for (int j = 0; j < cols; j++) {
+	                if (j + i < alphabet.length) {
+	                    System.out.printf("%3c", alphabet[j + i]);
+	                    System.out.print(' ');
+	                }
+	            }
+	            System.out.print("\nswitch:\t");
+	            for (int j = 0; j < cols; j++) {
+	                if (j + i < alphabet.length) {
+	                    System.out.printf("%3d", trieSwitch[j + i]);
+	                    System.out.print(' ');
+	                }
+	            }
+	            System.out.print("\n\n");
+	            i += cols;
+	        }
+	        //Print out the symbols stored and pointers
+	        i = 0;
+	        while (i < trieSymbol.length) {
+	            System.out.printf("%7s\t", "");
+	            for (int j = 0; j < cols; j++) {
+	                if (j + i < trieSymbol.length) {
+	                    System.out.printf("%3d", j + i);
+	                    System.out.print(' ');
+	                }
+	            }
+	            System.out.print("\nsymbol: ");
+	            for (int j = 0; j < cols; j++) {
+	                if (j + i < trieSymbol.length) {
+	                    if (trieSymbol[j + i] != '1') {
+	                        System.out.printf("%3c", trieSymbol[j + i]);
+	                        System.out.print(' ');
+	                    } else {
+	                        System.out.printf("%3s", "");
+	                        System.out.print(' ');
+	                    }
+
+	                }
+	            }
+	            System.out.print("\nnext:  \t");
+	            for (int j = 0; j < cols; j++) {
+	                if (j + i < trieNext.length) {
+	                    if (trieNext[j + i] != -1) {
+	                        System.out.printf("%3d", trieNext[j + i]);
+	                        System.out.print(' ');
+	                    } else {
+	                        System.out.printf("%3s", "");
+	                        System.out.print(' ');
+	                    }
+
+	                }
+	            }
+	            System.out.print("\n\n");
+	            i += cols;
+	        }
+	    }
+		
 		
 		/**
 		 * Inserts a string into the trie table.
@@ -451,54 +541,61 @@ public class ToyLexer {
 		 * @param s - string to be inserted
 		 * @return true if s inserted into table, false if s already exists
 		 */
-		boolean insert(String s) {
-			// use first character to determine index in switch array
-			char c = s.charAt(0);
+		void insert(String s) {
+			int charPos = 0;
+			char c = s.charAt(charPos++);
 			int switchIndex = getSwitchIndex(c);
 			
-			if (trieSwitch[switchIndex] == EMPTY)
+			if (trieSwitch[switchIndex] == EMPTY) {
 				trieSwitch[switchIndex] = nextFreeSpot;
+				create(s, nextFreeSpot);
+				return;
+			}
 			
-			int currPos = trieSwitch[switchIndex];
-			for (int i = 1; i < s.length(); i++) {
-				c = s.charAt(i);
-				if (trieSymbol[currPos] == ' ' || trieSymbol[currPos] == c) {
-					trieSymbol[currPos++] = c;
-				} else {
-					if (trieNext[currPos] == EMPTY) {
-						trieNext[currPos] = nextFreeSpot;
-						currPos = nextFreeSpot;
-						
+			int ptr = trieSwitch[switchIndex];
+			
+
+			if (charPos < s.length())
+				c = s.charAt(charPos++);
+			else
+				c = '@';
+			
+			boolean exit = false;
+			while (!exit) {
+				if (trieSymbol[ptr] == c) {
+					if (c != '@') {
+						ptr++;
+						if (charPos < s.length())
+							c = s.charAt(charPos++);
 					} else {
-						while (trieSymbol[currPos] != ' ' && trieSymbol[currPos] != c) {
-							currPos = trieNext[currPos];
-							if (trieNext[currPos] == EMPTY) {
-								trieNext[currPos] = nextFreeSpot;
-								currPos = nextFreeSpot;
-							}
-						}
+						exit = true;
 					}
-					trieSymbol[currPos++] = c;
+				} else {	
+					if (trieNext[ptr] != EMPTY)
+						ptr = trieNext[ptr];
+					else {
+						trieNext[ptr] = nextFreeSpot;
+						create(s, nextFreeSpot);
+						exit = true;
+					}
 				}
-			}
-			
-			if (trieSymbol[currPos] == '@') {
-				return false;
-			}
-			
-			// word is smaller than similar, previously inserted words
-			// e.g. inserting abs after absolute/absolutely
-			while (trieSymbol[currPos] != ' ') {
-				if (trieNext[currPos] == EMPTY) 
-					trieNext[currPos] = nextFreeSpot;
-					
-				currPos = trieNext[currPos];
-			}		
-			
-			trieSymbol[currPos++] = '@';	
-			nextFreeSpot = currPos;		
-			return true;
+			}	
 		}
+		
+		/**
+		 * Inserts a string into an empty location in the symbol table.
+		 * 
+		 * @param s - string to be inserted
+		 * @param ptr - position where string will be inserted
+		 */
+		private void create(String s, int ptr) {
+			for (int i = 1; i < s.length(); i++) {
+				trieSymbol[ptr++] = s.charAt(i);
+			}
+			trieSymbol[ptr++] = '@';
+			nextFreeSpot = ptr;
+		}
+		
 		
 		/**
 		 * Returns an index number for the switch array in the symbol table.
@@ -514,10 +611,13 @@ public class ToyLexer {
 		}
 		
 		
-		
-		
 	} // end of class Trie
 	
+	/**
+	 * 
+	 * Tokens are implemented using enum
+	 *
+	 */
 	private enum ToyToken {
 		_boolean(1, "boolean"),
 		_break(2, "break"),
