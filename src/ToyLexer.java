@@ -493,7 +493,7 @@ public class ToyLexer {
 	            System.out.print("\n\n");
 	            i += cols;
 	        }
-	        //Print out the symbols stored and pointers
+	        //Print out the symbols stored and ptrs
 	        i = 0;
 	        while (i < trieSymbol.length) {
 	            System.out.printf("%7s\t", "");
@@ -541,19 +541,23 @@ public class ToyLexer {
 		 * @param s - string to be inserted
 		 * @return true if s inserted into table, false if s already exists
 		 */
-		void insert(String s) {
+		void insert(String s) {		
 			int charPos = 0;
 			char c = s.charAt(charPos++);
 			int switchIndex = getSwitchIndex(c);
 			
+			// is switch is undefined, create immediately
 			if (trieSwitch[switchIndex] == EMPTY) {
 				trieSwitch[switchIndex] = nextFreeSpot;
-				create(s, nextFreeSpot);
+				
+				if (s.length() == 1)
+					trieSymbol[nextFreeSpot++] = '@';
+				else
+					create(s.substring(1), nextFreeSpot);
 				return;
 			}
 			
 			int ptr = trieSwitch[switchIndex];
-			
 
 			if (charPos < s.length())
 				c = s.charAt(charPos++);
@@ -567,6 +571,8 @@ public class ToyLexer {
 						ptr++;
 						if (charPos < s.length())
 							c = s.charAt(charPos++);
+						else
+							c = '@';
 					} else {
 						exit = true;
 					}
@@ -575,12 +581,17 @@ public class ToyLexer {
 						ptr = trieNext[ptr];
 					else {
 						trieNext[ptr] = nextFreeSpot;
-						create(s, nextFreeSpot);
+						if (s.length() == 1)
+							trieSymbol[nextFreeSpot] = '@';
+						else {
+							create(s.substring(charPos - 1, s.length()), nextFreeSpot);
+						}
 						exit = true;
 					}
 				}
 			}	
 		}
+	    
 		
 		/**
 		 * Inserts a string into an empty location in the symbol table.
@@ -589,7 +600,7 @@ public class ToyLexer {
 		 * @param ptr - position where string will be inserted
 		 */
 		private void create(String s, int ptr) {
-			for (int i = 1; i < s.length(); i++) {
+			for (int i = 0; i < s.length(); i++) {
 				trieSymbol[ptr++] = s.charAt(i);
 			}
 			trieSymbol[ptr++] = '@';
