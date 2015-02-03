@@ -5,7 +5,10 @@ import java.util.List;
 import java.util.LinkedList;
 
 /**
- * This class implements a lexical analyzer for the Toy language
+ * This class implements a lexical analyzer for the Toy language. Tokens are
+ * read in and placed into a linked list so that they can be output whenever
+ * needed. The lexer spots scanning tokens when the end of the file has been
+ * reached.
  */
 public class ToyLexer {
 	private static final char EOF_CHAR = (char) -1;
@@ -200,8 +203,11 @@ public class ToyLexer {
 					while (isHexDigit(curr = readChar())) {}
 					pushback(curr);
 				}
-				else
-					tokens.add(ToyToken._ERROR);			
+				else {
+					tokens.add(ToyToken._intconstant);
+					pushback(curr);
+					pushback(peek);
+				}
 			}
 			// DOUBLES AND DECIMAL INTS
 			else {
@@ -211,7 +217,6 @@ public class ToyLexer {
 				
 				// DOUBLE
 				if (curr == '.') {
-					tokens.add(ToyToken._doubleconstant);
 					handleDouble();
 				}
 				// DECIMAL INT
@@ -238,6 +243,7 @@ public class ToyLexer {
 			handleExponent(curr);
 		// DOUBLE WITHOUT EXPONENT	
 		} else {
+			tokens.add(ToyToken._doubleconstant);
 			pushback(curr);
 		}
 	}
@@ -253,7 +259,7 @@ public class ToyLexer {
 		char peek1, peek2;
 		
 		peek1 = readChar();
-		// E####
+		// E#...#
 		if (Character.isDigit(peek1)) {
 			while (Character.isDigit(peek1 = readChar())) {}
 			pushback(peek1);
@@ -265,14 +271,20 @@ public class ToyLexer {
 				while (Character.isDigit(peek2 = readChar())) {}
 				pushback(peek2);
 			}
-			// invalid exponential form, push back chars that will used
+			// invalid exponential form, push back chars that will be used
 			// for other tokens
 			else {
 				pushback(peek2); 	// pushback char after +/-
 				pushback(peek1); 	// pushback + or -
 				pushback(curr); 	// pushback e or E
 			}
+		// E followed by invalid char, push chars back
+		} else {
+			pushback(peek1);
+			pushback(curr);
 		}
+		
+		tokens.add(ToyToken._doubleconstant);
 	}
 	
 	
@@ -506,7 +518,7 @@ public class ToyLexer {
 	            System.out.print("\nsymbol: ");
 	            for (int j = 0; j < cols; j++) {
 	                if (j + i < trieSymbol.length) {
-	                    if (trieSymbol[j + i] != '1') {
+	                    if (trieSymbol[j + i] != ' ') {
 	                        System.out.printf("%3c", trieSymbol[j + i]);
 	                        System.out.print(' ');
 	                    } else {
@@ -546,10 +558,11 @@ public class ToyLexer {
 			char c = s.charAt(charPos++);
 			int switchIndex = getSwitchIndex(c);
 			
-			// is switch is undefined, create immediately
+			// If switch is undefined using switchIndex, create immediately
 			if (trieSwitch[switchIndex] == EMPTY) {
 				trieSwitch[switchIndex] = nextFreeSpot;
 				
+				// 1 char name (e.g. "a")
 				if (s.length() == 1)
 					trieSymbol[nextFreeSpot++] = '@';
 				else
@@ -558,7 +571,8 @@ public class ToyLexer {
 			}
 			
 			int ptr = trieSwitch[switchIndex];
-
+			// Start with next character in string to traverse symbol table.
+			// If string was one char long, '@' must be next char
 			if (charPos < s.length())
 				c = s.charAt(charPos++);
 			else
@@ -567,18 +581,24 @@ public class ToyLexer {
 			boolean exit = false;
 			while (!exit) {
 				if (trieSymbol[ptr] == c) {
+					// If c is not the terminal symbol, move to next spot
 					if (c != '@') {
 						ptr++;
+						// get next char
 						if (charPos < s.length())
 							c = s.charAt(charPos++);
 						else
 							c = '@';
 					} else {
+						// c == '@' so the word already exists therefore exit.
 						exit = true;
 					}
 				} else {	
+					// trieSymbol[ptr] != c but the next spot is defined
 					if (trieNext[ptr] != EMPTY)
 						ptr = trieNext[ptr];
+					// next spot is not defined so set it to nextFreeSpot
+					// and insert what is left of the word.
 					else {
 						trieNext[ptr] = nextFreeSpot;
 						if (s.length() == 1)
@@ -626,7 +646,8 @@ public class ToyLexer {
 	
 	/**
 	 * 
-	 * Tokens are implemented using enum
+	 * Tokens are implemented using an enum. Each token is assigned a unique
+	 * number to be used in the future with the syntax analyzer.
 	 *
 	 */
 	private enum ToyToken {

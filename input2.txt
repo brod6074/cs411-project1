@@ -1,0 +1,55 @@
+if
+IF
+forFOR
+hello
+HELLO
+if(23void
+if ( 23 void
+01
+0
+0x
+0X
+1x
+1X
+0x0
+0X0
+1x0
+1X0
+0x2AFE
+0Xtestvalue
+0
+0.
+.0
+0.0
+0.0e
+0.0E
+0.e
+0.E
+0.0e+
+0.0E-
+0.0e16
+0.e+2
+12.e9
+589986.928389eTESTVALUE
+""
+"above was an empty string"
+"this is an invalid string""
+""this should spit out NOT_A_TOKEN"
+"as is
+this"
+true
+false
+maybe
+test_expr = (a[i] + b - c) % d;
+val1 || val2 && val8
+//a single line comment without any other things in it
+tesval //a single line comment with preceding symbols
+/*testing a
+multi
+line
+comment*/ IDENTIFIER_
+/*invalid multi line comment */ not anymore */
+bool bracket_test() {
+    return true;
+}
+int test=3+(int)15.05820E2;
