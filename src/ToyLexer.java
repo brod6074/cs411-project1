@@ -144,51 +144,51 @@ public class ToyLexer {
 			pushback(peek);
 			String s = sb.toString();
 			
-			// determine if token should be id, keyword, or boolean
-			switch (s) {
-			case "true":
-			case "false":
-				tokens.add(ToyToken._booleanconstant); 	break;
-			case "boolean":
-				tokens.add(ToyToken._boolean); 			break;
-			case "break":
-				tokens.add(ToyToken._break); 			break;
-			case "class":
-				tokens.add(ToyToken._class); 			break;
-			case "double":
-				tokens.add(ToyToken._double); 			break;
-			case "else":
-				tokens.add(ToyToken._else); 			break;
-			case "extends":
-				tokens.add(ToyToken._extends); 			break;
-			case "for":
-				tokens.add(ToyToken._for); 				break;
-			case "if":
-				tokens.add(ToyToken._if); 				break;
-			case "implements":
-				tokens.add(ToyToken._implements); 		break;
-			case "int":
-				tokens.add(ToyToken._int); 				break;
-			case "interface":
-				tokens.add(ToyToken._interface); 		break;
-			case "newarray":
-				tokens.add(ToyToken._newarray); 		break;
-			case "println":
-				tokens.add(ToyToken._println); 			break;
-			case "readln":
-				tokens.add(ToyToken._readln); 			break;
-			case "return":
-				tokens.add(ToyToken._return); 			break;
-			case "string":
-				tokens.add(ToyToken._string); 			break;
-			case "void":
-				tokens.add(ToyToken._void); 			break;
-			case "while":
-				tokens.add(ToyToken._while); 			break;
-			default:
+			if (s.equals("true") || s.equals("false"))
+				tokens.add(ToyToken._booleanconstant);
+			else if (s.equals("boolean"))
+				tokens.add(ToyToken._boolean);
+			else if (s.equals("break"))
+				tokens.add(ToyToken._break);
+			else if (s.equals("class"))
+				tokens.add(ToyToken._class);
+			else if (s.equals("double"))
+				tokens.add(ToyToken._double);
+			else if (s.equals("else"))
+				tokens.add(ToyToken._else);
+			else if (s.equals("extends"))
+				tokens.add(ToyToken._extends);
+			else if (s.equals("else"))
+				tokens.add(ToyToken._else);
+			else if (s.equals("for"))
+				tokens.add(ToyToken._for);
+			else if (s.equals("if"))
+				tokens.add(ToyToken._if);
+			else if (s.equals("implements"))
+				tokens.add(ToyToken._implements);
+			else if (s.equals("int"))
+				tokens.add(ToyToken._int);
+			else if (s.equals("interface"))
+				tokens.add(ToyToken._interface);
+			else if (s.equals("newarray"))
+				tokens.add(ToyToken._newarray);
+			else if (s.equals("println"))
+				tokens.add(ToyToken._println);
+			else if (s.equals("readln"))
+				tokens.add(ToyToken._readln);
+			else if (s.equals("return"))
+				tokens.add(ToyToken._return);
+			else if (s.equals("string"))
+				tokens.add(ToyToken._string);
+			else if (s.equals("void"))
+				tokens.add(ToyToken._void);
+			else if (s.equals("while"))
+				tokens.add(ToyToken._void);
+			else {
 				tokens.add(ToyToken._id);
-					symTab.insert(s);
+				symTab.insert(s);
 			}
+				
 			
 		}
 		// DIGITS
